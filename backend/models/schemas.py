@@ -24,9 +24,20 @@ class ChatResponse(BaseModel):
     query_metadata: QueryMetadata
     session_id: str
 
+# class IndexStats(BaseModel):
+#     total_documents: int
+#     index_size_bytes: int
+#     earliest_date: str
+#     latest_date: str
+#     top_sources: List[Dict]
+
+class SourceCount(BaseModel):
+    source: str
+    count: int
+
 class IndexStats(BaseModel):
     total_documents: int
     index_size_bytes: int
-    earliest_date: str
-    latest_date: str
-    top_sources: List[Dict]
+    earliest_date: Optional[str] = None
+    latest_date: Optional[str] = None
+    top_sources: List[SourceCount]

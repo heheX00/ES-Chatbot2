@@ -27,13 +27,63 @@ class ESClient:
 
     async def get_index_stats(self) -> dict:
         """
-        Return summary statistics about the index.
+        Return summary statistics about the index:
+        - total_documents
+        - index_size_bytes
+        - earliest_date
+        - latest_date
+        - top_sources
         """
-        # Placeholder: Implement index stats logic
+
+        # 1️⃣ Document count
+        count_resp = await self.client.count(index=settings.es_index)
+        total_docs = count_resp.get("count", 0)
+
+        # 2️⃣ Index size
+        stats_resp = await self.client.indices.stats(
+            index=settings.es_index,
+            metric="store",
+        )
+
+        index_data = stats_resp["indices"].get(settings.es_index, {})
+        size_bytes = (
+            index_data.get("total", {})
+            .get("store", {})
+            .get("size_in_bytes", 0)
+        )
+
+        # 3️⃣ Aggregations for earliest/latest + top sources
+        agg_resp = await self.client.search(
+            index=settings.es_index,
+            size=0,
+            track_total_hits=False,
+            aggs={
+                "earliest_date": {"min": {"field": "V21Date"}},
+                "latest_date": {"max": {"field": "V21Date"}},
+                "top_sources": {
+                    "terms": {
+                        "field": "V2SrcCmnName.V2SrcCmnName.keyword",
+                        "size": 10,
+                    }
+                },
+            },
+        )
+
+        aggs = agg_resp.get("aggregations", {})
+
+        earliest = aggs.get("earliest_date", {}).get("value_as_string")
+        latest = aggs.get("latest_date", {}).get("value_as_string")
+
+        buckets = aggs.get("top_sources", {}).get("buckets", [])
+        top_sources = [
+            {"source": bucket["key"], "count": bucket["doc_count"]}
+            for bucket in buckets
+        ]
+
         return {
-            "total_documents": 0,
-            "index_size_bytes": 0,
-            "earliest_date": "",
-            "latest_date": "",
-            "top_sources": []
+            "total_documents": total_docs,
+            "index_size_bytes": size_bytes,
+            "earliest_date": earliest,
+            "latest_date": latest,
+            "top_sources": top_sources,
         }

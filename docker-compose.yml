@@ -1,7 +1,5 @@
 # docker-compose.yml
 
-version: "3.8"
-
 services:
   frontend:
     build: ./frontend
@@ -20,39 +18,33 @@ services:
     depends_on:
       chromadb:
         condition: service_healthy
-    environment:
-      - ES_HOST=${ES_HOST}
-      - ES_USERNAME=${ES_USERNAME}
-      - ES_PASSWORD=${ES_PASSWORD}
-      - ES_INDEX=${ES_INDEX}
-      - ES_VERIFY_SSL=${ES_VERIFY_SSL}
-      - LLM_BASE_URL=${LLM_BASE_URL}
-      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
-      - LLM_API_KEY=${LLM_API_KEY}
-      - MAX_RESULT_DOCS=${MAX_RESULT_DOCS}
-      - MAX_AGG_BUCKETS=${MAX_AGG_BUCKETS}
-      - CHROMA_HOST=${CHROMA_HOST}
-      - CHROMA_PORT=${CHROMA_PORT}
+    env_file:
+      - .env
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - gkg_net
 
   chromadb:
-    image: chromadb/chroma:latest
+    build: ./chromadb
     ports:
-      - "8020:8020"
+      - "8020:8000"  # host 8020 -> container 8000
+    volumes:
+      - chroma_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8020/api/v1/heartbeat"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 20
     networks:
       - gkg_net
 
 networks:
   gkg_net:
     driver: bridge
+
+volumes:
+  chroma_data:
