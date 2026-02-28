@@ -10,7 +10,7 @@ from routers import chat, index
 from services.logging_config import setup_logging
 
 setup_logging()
-logger = logging.getLogger("__name__")
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="GKG OSINT Chatbot API",
@@ -79,7 +79,6 @@ def health_check():
     chroma_ok = _check_chromadb()
 
     overall_ok = es_ok and llm_ok and chroma_ok
-
     return {
         "status": "ok" if overall_ok else "degraded",
         "elasticsearch": es_ok,

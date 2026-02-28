@@ -8,7 +8,7 @@ class JSONFormatter(logging.Formatter):
 
     OPTIONAL_FIELDS = (
         "session_id",
-        "query_hash",
+        "es_query",
         "safety_status",
         "error_type",
         "error_detail",
@@ -42,8 +42,13 @@ def setup_logging() -> None:
     """Configure structured JSON logging."""
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JSONFormatter())
-    
+
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
-    root_logger.handlers = [handler]
-    root_logger.propagate = False
+
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+
+    logging.getLogger("uvicorn").propagate = True
+    logging.getLogger("uvicorn.error").propagate = True
+    logging.getLogger("uvicorn.access").propagate = True

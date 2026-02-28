@@ -1,17 +1,16 @@
 from fastapi import APIRouter
 import logging
-logger = logging.getLogger(__name__)
-# import settings
 
+from config import settings
 from models.schemas import ChatRequest, ChatResponse, QueryMetadata
 from services.query_generator import QueryGenerator, QueryGenerationError
 from services.query_safety import QuerySafetyLayer, SafetyStatus
 from services.es_client import ESClient
 from services.context_manager import ContextManager
 from services.response_summariser import ResponseSummariser
-from config import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 query_gen = QueryGenerator()
 query_safety = QuerySafetyLayer()
 es = ESClient()
@@ -27,9 +26,24 @@ async def chat(request: ChatRequest):
       NL question -> ES query -> safety -> execution -> result shaping -> LLM summary
     """
 
+    session_id = request.session_id
+    logger.info(
+        "chat_request_received",
+        extra={
+            "session_id": session_id,
+        },
+    )
+
     # 1) Generate query
     try:
         es_query = query_gen.generate(request.message, request.history)
+        logger.info(
+            "generated_es_query",
+            extra={
+                "session_id": session_id,
+                "es_query": es_query,
+            },
+        )
     except QueryGenerationError:
         return ChatResponse(
             response="I couldn't translate that into a safe Elasticsearch query. Try rephrasing with a clearer entity/timeframe.",
@@ -66,7 +80,8 @@ async def chat(request: ChatRequest):
     try:
         es_resp = await es.search(index=settings.es_index, query=safe_query)
     except Exception as e:
-        logger.exception("Elasticsearch execution failed: %s", e)
+        logger.exception(
+            "Elasticsearch execution failed: %s", e)
         return ChatResponse(
             response="The data store is currently unavailable or the query failed to execute. Please try again later.",
             session_id=request.session_id,
