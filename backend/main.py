@@ -101,7 +101,6 @@ async def global_exception_handler(request: Request, exc: Exception):
             "session_id": session_id,
             "error_type": "undhandled_exception",
             "error_detail": repr(exc),
-            "request_path": str(request.url.path),
             "phase": "global_handling",
         }
     )

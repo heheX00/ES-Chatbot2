@@ -12,9 +12,6 @@ class JSONFormatter(logging.Formatter):
         "safety_status",
         "error_type",
         "error_detail",
-        "request_path",
-        "phase",
-        "latency_ms",
         "result_count",
     )
     
